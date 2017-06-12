@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	
+	<!-- 数据库连接池 -->
+	<bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource">
+		<property name="driverClassName" value="org.h2.Driver" />
+		<property name="url" value="jdbc:h2:tcp://localhost/~/test" />
+		<property name="username" value="sa" />
+		<property name="password" value="" />
+		<property name="validationQuery" value="select 1"></property>
+	</bean>
+	<bean name="authcBasic"
+		class="org.apache.shiro.web.filter.authc.BasicHttpAuthenticationFilter">
+		<property name="applicationName" value="please login  "></property>
+	</bean>
+	<bean id="logout" class="org.apache.shiro.web.filter.authc.LogoutFilter"> 
+        <property name="redirectUrl" value="/home.jsp" /> 
+    </bean> 
+	<bean id="shiroFilter" class="org.apache.shiro.spring.web.ShiroFilterFactoryBean">
+		<property name="securityManager" ref="securityManager" />
+		<property name="loginUrl" value="/login.jsp" />
+		<property name="successUrl" value="/home.jsp" />
+		<property name="unauthorizedUrl" value="/login.jsp" />
+		<property name="filterChainDefinitions">
+			<value>
+				/login.jsp= authc
+				/logout = logout
+				/account/** = authc
+				/abc/**=authc
+			</value>
+		</property>
+	</bean>
+
+
+	<bean id="securityManager" class="org.apache.shiro.web.mgt.DefaultWebSecurityManager">
+		<property name="realm" ref="myRealm" />
+		<property name="authenticator" ref="authenticator"></property>
+		<property name="authorizer" ref="authorizer"></property>
+	</bean>
+	<bean id="lifecycleBeanPostProcessor" class="org.apache.shiro.spring.LifecycleBeanPostProcessor" />
+	<bean id="authenticator" class="org.apache.shiro.authc.pam.ModularRealmAuthenticator">
+		<property name="authenticationStrategy" ref="authenticationStrategy"></property>
+		<property name="realms">
+			<ref bean="myRealm" />
+		</property>
+	</bean>
+	<bean id="authorizer" class="org.apache.shiro.authz.ModularRealmAuthorizer">
+		<property name="permissionResolver" ref="permissionResolver"></property>
+		<property name="realms">
+			<ref bean="myRealm" />
+		</property>
+	</bean>
+
+	<bean id="permissionResolver"
+		class="org.apache.shiro.authz.permission.WildcardPermissionResolver" />
+	<bean id="authenticationStrategy" class="org.apache.shiro.authc.pam.AllSuccessfulStrategy" />
+
+
+	<bean id="myRealm" class="org.apache.shiro.realm.jdbc.JdbcRealm">
+		<property name="permissionsLookupEnabled" value="true" />
+		<property name="dataSource" ref="dataSource" />
+		<property name="authenticationQuery"
+			value="SELECT PASSWORD FROM USERSS WHERE USERNAME = ?" />
+		<property name="userRolesQuery"
+			value="SELECT ROLE_NAME  FROM USER_ROLESS WHERE USERNAME = ?" />
+		<property name="permissionsQuery"
+			value="SELECT PERMISSION  FROM ROLES_PERMISSIONSS  WHERE ROLE_NAME = ?" />
+	</bean>
+	<bean
+		class="org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator"
+		depends-on="lifecycleBeanPostProcessor" />
+	<bean
+		class="org.apache.shiro.spring.security.interceptor.AuthorizationAttributeSourceAdvisor">
+		<property name="securityManager" ref="securityManager" />
+	</bean>
+	<bean
+		class="org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator"
+		depends-on="lifecycleBeanPostProcessor" />
+	<bean
+		class="org.apache.shiro.spring.security.interceptor.AuthorizationAttributeSourceAdvisor">
+		<property name="securityManager" ref="securityManager" />
+	</bean>
+</beans>
